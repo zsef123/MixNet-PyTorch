@@ -49,7 +49,8 @@ class Runner():
             epoch : current epoch
             filename : model save file name
         """
-
+        print("Model saved %d epoch" % (epoch))
+        return
         torch.save({"model_type": self.arg.model,
                     "start_epoch": epoch + 1,
                     "network": self.net.module.state_dict(),

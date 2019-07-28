@@ -21,7 +21,7 @@ def arg_parse():
     parser.add_argument('--save_dir', type=str, required=True,
                         help='Directory name to save the model')
 
-    parser.add_argument('--root', type=str, default="/data2/imagenet",
+    parser.add_argument('--root', type=str, default="/data1/imagenet",
                         help="The Directory of data path.")
     parser.add_argument('--gpus', type=str, default="0,1,2,3",
                         help="Select GPU Numbers | 0,1,2,3 | ")
