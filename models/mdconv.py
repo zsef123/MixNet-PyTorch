@@ -22,7 +22,7 @@ class MDConv(nn.Module):
         
         self.in_channels  = _split_channels(in_channels, len(kernel_sizes))
 
-        self.convs = []
+        self.convs = nn.ModuleList()
         for ch, k, stride in zip(self.in_channels, kernel_sizes, strides):
             dilation = 1
             if strides[0] == 1 and dilatied:

@@ -1,3 +1,4 @@
+
 import os
 import argparse
 
@@ -25,7 +26,7 @@ def arg_parse():
                         help="The Directory of data path.")
     parser.add_argument('--gpus', type=str, default="0,1,2,3",
                         help="Select GPU Numbers | 0,1,2,3 | ")
-    parser.add_argument('--num_workers', type=int, default="32",
+    parser.add_argument('--num_workers', type=int, default=32,
                         help="Select CPU Number workers")
 
     parser.add_argument('--model', type=str, default='mixs',
@@ -39,7 +40,7 @@ def arg_parse():
     parser.add_argument('--ema_decay', type=float, default=0.9999,
                         help="Exponential Moving Average Term")
 
-    parser.add_argument('--optim', type=str, default='rmsprop', choices=["rmsprop", "adam"])
+    parser.add_argument('--optim', type=str, default='adam', choices=["rmsprop", "adam"])
     parser.add_argument('--lr', type=float, default=0.016, help="Base learning rate when train batch size is 256.")
     # Adam Optimizer
     parser.add_argument('--beta', nargs="*", type=float, default=(0.5, 0.999))
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
     scaled_lr = arg.lr * arg.batch_size / 256
     optim = {
-        "adam" : lambda : torch.optim.Adam(net.parameters(), lr=arg.lr, betas=arg.beta, weight_decay=arg.decay),
+        "adam" : lambda : torch.optim.Adam(net.parameters(), betas=arg.beta, weight_decay=arg.decay),
         "rmsprop" : lambda : torch.optim.RMSprop(net.parameters(), lr=scaled_lr, momentum=arg.momentum, eps=arg.eps, weight_decay=arg.decay)
     }[arg.optim]()
 
@@ -96,5 +97,6 @@ if __name__ == "__main__":
 
     run = Runner(arg, net, optim, torch_device, loss, logger, scheduler)
     if arg.test is False:
-        run.train(train_loader, val_loader)
+        with torch.autograd.detect_anomaly():
+            run.train(train_loader, val_loader)
     run.test(train_loader, val_loader)

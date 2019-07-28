@@ -20,7 +20,7 @@ class Runner():
         self.torch_device = torch_device
 
         self.net = net
-        self.ema = copy.deepcopy(net.module).cpu()
+        self.ema = copy.deepcopy(net).cpu()
         self.ema.eval()
         for p in self.ema.parameters():
             p.requires_grad_(False)
@@ -98,10 +98,11 @@ class Runner():
 
     def train(self, train_loader, val_loader=None):
         print("\nStart Train len :", len(train_loader.dataset))        
-        self.net.train()
         for epoch in range(self.start_epoch, self.arg.epoch):
+            self.net.train()
             for i, (input_, target_) in enumerate(train_loader):
                 target_ = target_.to(self.torch_device, non_blocking=True)
+                input_ = input_.to(self.torch_device)
 
                 if self.scheduler:
                     self.scheduler.step()
@@ -117,12 +118,14 @@ class Runner():
                 if (i % 50) == 0:
                     self.logger.log_write("train", epoch=epoch, loss=loss.item())
                 torch.cuda.empty_cache()
+
             if val_loader is not None:
                 self.valid(epoch, val_loader)
 
     def _get_acc(self, loader):
         correct = 0
         with torch.no_grad():
+            self.net.eval()
             for input_, target_ in loader:
                 out = self.ema(input_)
                 out = F.softmax(out, dim=1)
