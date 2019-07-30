@@ -37,9 +37,6 @@ def arg_parse():
     parser.add_argument('--batch_size', type=int, default=1024, help='The size of batch')
     parser.add_argument('--test', action="store_true", help='Only Test')
 
-    parser.add_argument('--ema_decay', type=float, default=0.9999,
-                        help="Exponential Moving Average Term")
-
     parser.add_argument('--optim', type=str, default='adam', choices=["rmsprop", "adam"])
     parser.add_argument('--lr', type=float, default=0.016, help="Base learning rate when train batch size is 256.")
     # Adam Optimizer
@@ -97,6 +94,5 @@ if __name__ == "__main__":
 
     run = Runner(arg, net, optim, torch_device, loss, logger, scheduler)
     if arg.test is False:
-        with torch.autograd.detect_anomaly():
-            run.train(train_loader, val_loader)
+        run.train(train_loader, val_loader)
     run.test(train_loader, val_loader)

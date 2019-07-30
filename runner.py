@@ -11,20 +11,16 @@ import torch.nn.functional as F
 
 
 class Runner():
-    def __init__(self, arg, net, optim, torch_device, loss, logger, scheduler=None):
-        self.arg = arg
-        self.save_dir = arg.save_dir
+    def __init__(self, model_type, save_dir, epochs, net, optim, torch_device, loss, logger, scheduler=None):
+        self.model_type = model_type
+        self.save_dir = save_dir
+        self.epochs = epochs
 
         self.logger = logger
 
         self.torch_device = torch_device
 
         self.net = net
-        self.ema = copy.deepcopy(net).cpu()
-        self.ema.eval()
-        for p in self.ema.parameters():
-            p.requires_grad_(False)
-        self.ema_decay = arg.ema_decay
 
         self.loss = loss
         self.optim = optim
@@ -51,10 +47,9 @@ class Runner():
         """
         print("Model saved %d epoch" % (epoch))
         return
-        torch.save({"model_type": self.arg.model,
+        torch.save({"model_type": self.model_type,
                     "start_epoch": epoch + 1,
                     "network": self.net.module.state_dict(),
-                    "ema": self.ema.state_dict(),
                     "optimizer": self.optim.state_dict(),
                     "best_metric": self.best_metric
                     }, self.save_dir + "/%s.pth.tar" % (filename))
@@ -75,12 +70,11 @@ class Runner():
         if os.path.exists(file_path) is True:
             print("Load %s to %s File" % (self.save_dir, filename))
             ckpoint = torch.load(file_path)
-            if ckpoint["model_type"] != self.arg.model:
+            if ckpoint["model_type"] != self.model_type:
                 raise ValueError("Ckpoint Model Type is %s" %
                                  (ckpoint["model_type"]))
 
             self.net.module.load_state_dict(ckpoint['network'])
-            self.ema.load_state_dict(ckpoint['ema'])
             self.optim.load_state_dict(ckpoint['optimizer'])
             self.start_epoch = ckpoint['start_epoch']
             self.best_metric = ckpoint["best_metric"]
@@ -89,16 +83,9 @@ class Runner():
         else:
             print("Load Failed, not exists file")
 
-    def update_ema(self):
-        with torch.no_grad():
-            named_param = dict(self.net.module.named_parameters())
-            for k, v in self.ema.named_parameters():
-                param = named_param[k].detach().cpu()
-                v.copy_(self.ema_decay * v + (1 - self.ema_decay) * param)
-
     def train(self, train_loader, val_loader=None):
         print("\nStart Train len :", len(train_loader.dataset))        
-        for epoch in range(self.start_epoch, self.arg.epoch):
+        for epoch in range(self.start_epoch, self.epochs):
             self.net.train()
             for i, (input_, target_) in enumerate(train_loader):
                 target_ = target_.to(self.torch_device, non_blocking=True)
@@ -113,11 +100,9 @@ class Runner():
                 self.optim.zero_grad()
                 loss.backward()
                 self.optim.step()
-                self.update_ema()
 
                 if (i % 50) == 0:
                     self.logger.log_write("train", epoch=epoch, loss=loss.item())
-                torch.cuda.empty_cache()
 
             if val_loader is not None:
                 self.valid(epoch, val_loader)
@@ -127,12 +112,11 @@ class Runner():
         with torch.no_grad():
             self.net.eval()
             for input_, target_ in loader:
-                out = self.ema(input_)
+                out = self.net(input_)
                 out = F.softmax(out, dim=1)
 
                 _, idx = out.max(dim=1)
                 correct += (target_ == idx).sum().item()
-                torch.cuda.empty_cache()
 
         return correct / len(loader.dataset)
 

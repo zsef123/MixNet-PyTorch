@@ -98,6 +98,14 @@ class MixNet(nn.Module):
             nn.Dropout(dropout_rate),
             nn.Linear(head, num_classes)
         )
+        self.init_weights()
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, mode="fan_out", nonlinearity='relu')
+            elif isinstance(m, nn.Linear):
+                nn.init.kaiming_uniform_(m.weight, mode='fan_in', nonlinearity='linear')
 
     def forward(self, x):
         # print("Input : ", x.shape)
