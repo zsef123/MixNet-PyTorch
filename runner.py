@@ -11,16 +11,16 @@ import torch.nn.functional as F
 
 
 class Runner():
-    def __init__(self, model_type, save_dir, epochs, net, optim, torch_device, loss, logger, scheduler=None):
+    def __init__(self, model_type, save_dir, epochs, net, optim, device, loss, logger, scheduler=None):
         self.model_type = model_type
         self.save_dir = save_dir
         self.epochs = epochs
 
         self.logger = logger
 
-        self.torch_device = torch_device
+        self.device = device
 
-        self.net = net
+        self.net = net.to(device)
 
         self.loss = loss
         self.optim = optim
@@ -88,8 +88,7 @@ class Runner():
         for epoch in range(self.start_epoch, self.epochs):
             self.net.train()
             for i, (input_, target_) in enumerate(train_loader):
-                target_ = target_.to(self.torch_device, non_blocking=True)
-                input_ = input_.to(self.torch_device)
+                target_ = target_.to(self.device, non_blocking=True)
 
                 if self.scheduler:
                     self.scheduler.step()
@@ -107,16 +106,16 @@ class Runner():
             if val_loader is not None:
                 self.valid(epoch, val_loader)
 
+    @torch.no_grad()
     def _get_acc(self, loader):
         correct = 0
-        with torch.no_grad():
-            self.net.eval()
-            for input_, target_ in loader:
-                out = self.net(input_)
-                out = F.softmax(out, dim=1)
+        self.net.eval()
+        for input_, target_ in loader:
+            out = self.net(input_)
+            out = F.softmax(out, dim=1).cpu()
 
-                _, idx = out.max(dim=1)
-                correct += (target_ == idx).sum().item()
+            _, idx = out.max(dim=1)
+            correct += (target_ == idx).sum().item()
 
         return correct / len(loader.dataset)
 
@@ -126,8 +125,7 @@ class Runner():
 
         if acc > self.best_metric:
             self.best_metric = acc
-            self.save(epoch, "epoch[%05d]_acc[%.4f]" % (
-                epoch, acc))
+            self.save(epoch, "epoch[%05d]_acc[%.4f]" % (epoch, acc))
 
     def test(self, train_loader, val_loader):
         print("\n Start Test")

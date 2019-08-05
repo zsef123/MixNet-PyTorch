@@ -7,7 +7,11 @@ A PyTorch implementation of `MixNet: Mixed Depthwise Convolutional Kernels.`
 
 <hr>
 
-## Stll testing. Not validated now
+## Acknowledge
+
+Now EMA is running on CPU. So It slower than normal runner.
+
+If you running on GPU, then change these lines [init](ema_runner.py#23), [update_ema](ema_runner.py#96)
 
 <hr>
 
@@ -47,5 +51,3 @@ optional arguments:
   --scheduler {exp,cosine,none}
                         Learning rate scheduler type
 ```
-
-<hr>

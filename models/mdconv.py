@@ -14,18 +14,18 @@ def _split_channels(total_filters, num_groups):
 
 
 class MDConv(nn.Module):
-    def __init__(self, in_channels, kernel_sizes, strides, dilatied=False, bias=True):
+    def __init__(self, in_channels, kernel_sizes, stride, dilatied=False, bias=False):
         super().__init__()
 
-        kernel_sizes = kernel_sizes if isinstance(kernel_sizes, list) else [kernel_sizes]
-        strides = [strides] * len(kernel_sizes)
-        
+        if not isinstance(kernel_sizes, list):
+            kernel_sizes = [kernel_sizes]
+
         self.in_channels  = _split_channels(in_channels, len(kernel_sizes))
 
         self.convs = nn.ModuleList()
-        for ch, k, stride in zip(self.in_channels, kernel_sizes, strides):
+        for ch, k in zip(self.in_channels, kernel_sizes):
             dilation = 1
-            if strides[0] == 1 and dilatied:
+            if stride[0] == 1 and dilatied:
                 dilation, stride = (k - 1) // 2, 3
                 print("Use dilated conv with dilation rate = {}".format(dilation))
             pad = ((stride[0] - 1) + dilation * (k - 1)) // 2

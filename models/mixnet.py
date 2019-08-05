@@ -66,6 +66,7 @@ class MixModule(nn.Module):
         layers = [MixBlock(dw_ksize, expand_ksize, project_ksize,
                            in_channels, out_channels, expand_ratio, id_skip,
                            strides, se_ratio, swish, dilated)]
+
         for _ in range(num_repeat - 1):
             layers.append(MixBlock(dw_ksize, expand_ksize, project_ksize,
                                    in_channels, out_channels, expand_ratio, id_skip,
@@ -73,8 +74,7 @@ class MixModule(nn.Module):
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
-        x = self.layers(x)
-        return x
+        return self.layers(x)
 
 
 class MixNet(nn.Module):
@@ -98,6 +98,7 @@ class MixNet(nn.Module):
             nn.Dropout(dropout_rate),
             nn.Linear(head, num_classes)
         )
+
         self.init_weights()
 
     def init_weights(self):
@@ -117,7 +118,7 @@ class MixNet(nn.Module):
         return out
 
 
-def mixnet_s(depth_multiplier=1, depth_divisor=8, min_depth=None):
+def mixnet_s(depth_multiplier=1, depth_divisor=8, min_depth=None, num_classes=1000):
     """
     Creates mixnet-s model.
 
@@ -152,7 +153,7 @@ def mixnet_s(depth_multiplier=1, depth_divisor=8, min_depth=None):
     for a in blocks_args:
         print(a)
     print("-----------")
-    return MixNet(stem, blocks_args, head, dropout)
+    return MixNet(stem, blocks_args, head, dropout, num_classes=num_classes)
 
 
 if __name__ == "__main__":
